@@ -36,7 +36,7 @@ func init() {
 
 func main() {
 	app := fx.New(
-		mongofx.NewModule("mongo", mongofx.ConfigMap(viper.GetStringMap("mongodb"))),
+		mongofx.NewModule("mongo", mongofx.WithURIs(viper.GetStringMapString("mongodb"))),
 		fx.Invoke(fx.Annotate(func(client *mongo.Client, client2 *mongo.Client) {}, fx.ParamTags(`name:"mongo_clienta"`, `name:"mongo_clienb"`))),
 	)
 

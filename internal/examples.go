@@ -2,7 +2,6 @@ package internal
 
 import (
 	"git.eway.vn/x10-pushtimize/golibs/mongofx"
-	"git.eway.vn/x10-pushtimize/golibs/mongofx/options"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/fx"
 )
@@ -24,7 +23,7 @@ func multipleClients() {
 	configs["clientb"] = "mongodb://localhost:27017/dbb"
 
 	fx.New(
-		mongofx.NewModule("mongo", options.URIs(configs)),
+		mongofx.NewModule("mongo", mongofx.WithURIs(configs)),
 		fx.Invoke(
 			fx.Annotate(func(client *mongo.Client) {},
 				fx.ParamTags(`name:"mongo"`),
