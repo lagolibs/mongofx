@@ -1,4 +1,4 @@
-package internal
+package examples
 
 import (
 	"git.eway.vn/x10-pushtimize/golibs/mongofx"
