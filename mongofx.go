@@ -30,12 +30,12 @@ func NewSimpleModule(namespace string, uri string) fx.Option {
 // NewModule construct a new fx Module for mongodb, using configuration options
 // Each mongo client will be named as <namespace>_<name>
 // Also register a <namespace> group
-func NewModule(namespace string, opts ...ModuleOptionFn) fx.Option {
+func NewModule(namespace string, opts ...ModuleOption) fx.Option {
 	conf := moduleConfig{
 		timeout: newDefaultTimeout(),
 	}
 	for i := range opts {
-		opts[i](conf)
+		opts[i](&conf)
 	}
 	return newModule(namespace, conf)
 }
@@ -79,12 +79,13 @@ type moduleConfig struct {
 	timeout timeoutConfig
 }
 
-type ModuleOptionFn func(conf moduleConfig)
+// ModuleOption applies an option to moduleConfig
+type ModuleOption func(conf *moduleConfig)
 
-// WithURIs create ModuleOptionFn that parse a map of uris into moduleConfig.
+// WithURIs create ModuleOption that parse a map of uris into moduleConfig.
 // This help integrate with configuration library such as vipers
-func WithURIs(uris map[string]string) ModuleOptionFn {
-	return func(conf moduleConfig) {
+func WithURIs(uris map[string]string) ModuleOption {
+	return func(conf *moduleConfig) {
 		for key, uri := range uris {
 			conf.configs[key] = options.Client().ApplyURI(uri)
 		}
@@ -93,16 +94,16 @@ func WithURIs(uris map[string]string) ModuleOptionFn {
 
 // WithConnectTimeout set the timeout for client initialization.
 // The timeout for Connect and Ping operations will be half of given totalTimeout for each.
-func WithConnectTimeout(totalTimeout time.Duration) ModuleOptionFn {
+func WithConnectTimeout(totalTimeout time.Duration) ModuleOption {
 	opTimeout := totalTimeout / 2
-	return func(conf moduleConfig) {
+	return func(conf *moduleConfig) {
 		conf.timeout.connectTimeout = opTimeout
 		conf.timeout.pingTimeout = opTimeout
 	}
 }
 
-func WithClient(name string, options *options.ClientOptions) ModuleOptionFn {
-	return func(conf moduleConfig) {
+func WithClient(name string, options *options.ClientOptions) ModuleOption {
+	return func(conf *moduleConfig) {
 		conf.configs[name] = options
 	}
 }

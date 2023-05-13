@@ -4,6 +4,12 @@ Fx Module for mongo client
 
 ### Usage
 
+The recommended way to config mongo client is using uri
+
+```
+mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]
+```
+
 Example usage with multiple mongodb and viper
 
 ```properties
