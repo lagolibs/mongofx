@@ -1,4 +1,4 @@
-# Mongofx
+# Mongo Fx
 
 Fx Module for mongo client
 
