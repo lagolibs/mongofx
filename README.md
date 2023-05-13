@@ -45,5 +45,5 @@ func main() {
 
 ```
 
-See [internal/examples](examples/examples.go) for more usage.
+See [examples/](examples/examples.go) for more usage.
 

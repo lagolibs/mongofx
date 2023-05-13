@@ -18,7 +18,7 @@ func NewSimpleModule(namespace string, uri string) fx.Option {
 	return fx.Module(namespace,
 		fx.Provide(
 			fx.Annotate(
-				mongoClientProvider(otp),
+				mongoClientProvider(otp, newDefaultTimeout()),
 				fx.ResultTags(
 					fmt.Sprintf(`name:"%s"`, namespace),
 				),
@@ -31,14 +31,17 @@ func NewSimpleModule(namespace string, uri string) fx.Option {
 // Each mongo client will be named as <namespace>_<name>
 // Also register a <namespace> group
 func NewModule(namespace string, opts ...ModuleOptionFn) fx.Option {
-	conf := moduleConfig{}
+	conf := moduleConfig{
+		timeout: newDefaultTimeout(),
+	}
 	for i := range opts {
 		opts[i](conf)
 	}
 	return newModule(namespace, conf)
 }
 
-func newModule(namespace string, configs moduleConfig) fx.Option {
+func newModule(namespace string, conf moduleConfig) fx.Option {
+	configs := conf.configs
 	if configs == nil || len(configs) == 0 {
 		return fx.Module(namespace)
 	}
@@ -47,7 +50,7 @@ func newModule(namespace string, configs moduleConfig) fx.Option {
 		provides = append(provides,
 			fx.Provide(
 				fx.Annotate(
-					mongoClientProvider(clientOptions),
+					mongoClientProvider(clientOptions, conf.timeout),
 					fx.ResultTags(
 						fmt.Sprintf(`name:"%s_%s"`, namespace, name),
 						fmt.Sprintf(`group:"%s"`, namespace),
@@ -59,8 +62,22 @@ func newModule(namespace string, configs moduleConfig) fx.Option {
 	return fx.Module(namespace, provides...)
 }
 
-// moduleConfig is a map between name of the client and client options.
-type moduleConfig map[string]*options.ClientOptions
+type timeoutConfig struct {
+	connectTimeout time.Duration
+	pingTimeout    time.Duration
+}
+
+func newDefaultTimeout() timeoutConfig {
+	return timeoutConfig{
+		pingTimeout:    10 * time.Second,
+		connectTimeout: 10 * time.Second,
+	}
+}
+
+type moduleConfig struct {
+	configs map[string]*options.ClientOptions
+	timeout timeoutConfig
+}
 
 type ModuleOptionFn func(conf moduleConfig)
 
@@ -69,26 +86,36 @@ type ModuleOptionFn func(conf moduleConfig)
 func WithURIs(uris map[string]string) ModuleOptionFn {
 	return func(conf moduleConfig) {
 		for key, uri := range uris {
-			conf[key] = options.Client().ApplyURI(uri)
+			conf.configs[key] = options.Client().ApplyURI(uri)
 		}
+	}
+}
+
+// WithConnectTimeout set the timeout for client initialization.
+// The timeout for Connect and Ping operations will be half of given totalTimeout for each.
+func WithConnectTimeout(totalTimeout time.Duration) ModuleOptionFn {
+	opTimeout := totalTimeout / 2
+	return func(conf moduleConfig) {
+		conf.timeout.connectTimeout = opTimeout
+		conf.timeout.pingTimeout = opTimeout
 	}
 }
 
 func WithClient(name string, options *options.ClientOptions) ModuleOptionFn {
 	return func(conf moduleConfig) {
-		conf[name] = options
+		conf.configs[name] = options
 	}
 }
 
 type mongoClientConstructor func(lc fx.Lifecycle) *mongo.Client
 
 // Actual registration logic
-func mongoClientProvider(options *options.ClientOptions) mongoClientConstructor {
+func mongoClientProvider(options *options.ClientOptions, config timeoutConfig) mongoClientConstructor {
 	return func(lc fx.Lifecycle) *mongo.Client {
 		var client *mongo.Client
 		lc.Append(fx.Hook{
 			OnStart: func(fxCtx context.Context) error {
-				ctx, cancel := context.WithTimeout(fxCtx, 10*time.Second)
+				ctx, cancel := context.WithTimeout(fxCtx, config.connectTimeout)
 				defer cancel()
 
 				client, err := mongo.Connect(ctx, options)
@@ -96,7 +123,7 @@ func mongoClientProvider(options *options.ClientOptions) mongoClientConstructor 
 					return err
 				}
 
-				ctx, cancel = context.WithTimeout(fxCtx, 5*time.Second)
+				ctx, cancel = context.WithTimeout(fxCtx, config.pingTimeout)
 				defer cancel()
 				return client.Ping(ctx, readpref.Primary())
 			},
