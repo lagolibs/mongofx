@@ -2,19 +2,28 @@
 
 Fx Module for mongo client
 
-### Usage
+## Installation
 
-The recommended way to config mongo client is using uri
+Use Go modules to install mongofx.
+
+```shell
+go get -u github.com/lagolibs/mongofx
+```
+
+## Usage
+
+The recommended way to config mongo client is using uri options.
 
 ```
 mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]
 ```
 
-Example usage with multiple mongodb and viper
+Example usage with multiple mongodb and viper:
 
-```properties
-mongodb.uris.clienta = mongodb://localhost:27017/dba
-mongodb.uris.clientb = mongodb://localhost:27017/dbb
+```yaml
+mongodb.uris:
+  clienta: mongodb://localhost:27017/dba
+  clientb: mongodb://localhost:27017/dbb
 ```
 
 ```go
@@ -31,7 +40,7 @@ import (
 
 func init() {
 	viper.AddConfigPath(lo.Must(os.Getwd()))
-	viper.SetConfigType("properties")
+	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
 	viper.AutomaticEnv()
 
