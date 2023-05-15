@@ -30,7 +30,7 @@ mongodb.uris:
 package main
 
 import (
-	"git.eway.vn/x10-pushtimize/golibs/mongofx"
+	"github.com/lagolibs/mongofx"
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"

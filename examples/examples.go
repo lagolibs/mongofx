@@ -1,7 +1,7 @@
 package examples
 
 import (
-	"git.eway.vn/x10-pushtimize/golibs/mongofx"
+	"github.com/lagolibs/mongofx"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/fx"
 	"time"
