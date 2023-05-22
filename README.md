@@ -60,5 +60,5 @@ func main() {
 
 ```
 
-See [examples/](examples/examples.go) for more usage.
+See [tests](mongofx_test.go) for more usage.
 
