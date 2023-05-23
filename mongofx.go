@@ -33,6 +33,7 @@ func NewSimpleModule(namespace string, uri string) fx.Option {
 func NewModule(namespace string, opts ...ModuleOption) fx.Option {
 	conf := moduleConfig{
 		timeout: newDefaultTimeout(),
+		configs: make(map[string]*options.ClientOptions, len(opts)),
 	}
 	for i := range opts {
 		opts[i](&conf)
