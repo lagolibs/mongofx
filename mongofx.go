@@ -109,22 +109,21 @@ func WithClient(name string, options *options.ClientOptions) ModuleOption {
 	}
 }
 
-type mongoClientConstructor func(lc fx.Lifecycle) *mongo.Client
+type mongoClientConstructor func(lc fx.Lifecycle) (*mongo.Client, error)
 
 // Actual registration logic
 func mongoClientProvider(options *options.ClientOptions, config timeoutConfig) mongoClientConstructor {
-	return func(lc fx.Lifecycle) *mongo.Client {
-		var client *mongo.Client
+	return func(lc fx.Lifecycle) (*mongo.Client, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), config.connectTimeout)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, options)
+		if err != nil {
+			return nil, err
+		}
+
 		lc.Append(fx.Hook{
 			OnStart: func(fxCtx context.Context) error {
-				ctx, cancel := context.WithTimeout(fxCtx, config.connectTimeout)
-				defer cancel()
-
-				client, err := mongo.Connect(ctx, options)
-				if err != nil {
-					return err
-				}
-
 				ctx, cancel = context.WithTimeout(fxCtx, config.pingTimeout)
 				defer cancel()
 				return client.Ping(ctx, readpref.Primary())
@@ -134,6 +133,6 @@ func mongoClientProvider(options *options.ClientOptions, config timeoutConfig) m
 			},
 		})
 
-		return client
+		return client, nil
 	}
 }
